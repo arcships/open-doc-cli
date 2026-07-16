@@ -1,0 +1,47 @@
+name: release
+
+# Tag-triggered. Pushing a tag like v0.1.0 cross-compiles the engine for
+# every supported platform, generates sha256 checksums, and publishes them
+# as a GitHub Release. The download script (skill/scripts/download-binary.sh)
+# consumes these assets. Keep the tag in sync with skill/.claude-plugin/plugin.json.
+on:
+  push:
+    tags: ['v*']
+
+# gh release create needs write access to create the release and upload assets.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # Cross-compile all targets in one job — pure-Go, CGO-free, so a single
+      # Linux runner produces every platform binary in seconds. Flags match
+      # scripts/build-skill.sh (CGO_ENABLED=0, -trimpath) for reproducibility.
+      - name: cross-compile
+        run: |
+          mkdir -p dist
+          for target in darwin/arm64 darwin/amd64 linux/amd64 linux/arm64; do
+            os="${target%/*}"; arch="${target#*/}"
+            out="dist/opendoc-${os}-${arch}"
+            echo "building $out"
+            CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -trimpath -ldflags="-s -w" -o "$out" ./cmd/opendoc
+          done
+          ( cd dist && sha256sum opendoc-* > checksums.txt && cat checksums.txt )
+
+      - name: publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            dist/opendoc-* dist/checksums.txt

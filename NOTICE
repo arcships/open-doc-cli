@@ -1,0 +1,8 @@
+opendoc
+Copyright 2026 arcships
+
+This product embeds lark-cli (github.com/larksuite/cli, MIT License) as a
+compiled-in Go module: the hidden `opendoc lark-engine` subcommand dispatches
+into it in-process, so lark-cli's code is distributed as part of the opendoc
+binary. Other third-party Go module dependencies compiled into release
+binaries are listed in go.mod with their own licenses.

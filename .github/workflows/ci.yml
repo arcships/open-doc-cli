@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only token: CI builds and tests, it never writes to the repo.
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR cancels the in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # Single source of truth for the Go version: go.mod's `go` directive.
+          go-version-file: go.mod
+          cache: true
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l . | grep -v '^skill/bin/' || true)"
+          if [ -n "$unformatted" ]; then
+            echo "These files are not gofmt-ed:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: latest
+          install-go: false
+
+      - name: build
+        run: go build ./...
+
+      - name: test (race + coverage)
+        run: go test -race -covermode=atomic ./...
+
+      # The delivery unit is a static, CGO-free single binary.
+      # Guard that the packaging build still works, not just `go build ./...`.
+      - name: delivery build (static skill binary)
+        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o skill/bin/opendoc ./cmd/opendoc

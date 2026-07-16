@@ -1,0 +1,8 @@
+{
+  "name": "opendoc",
+  "description": "Local knowledge base: one-way mirrors authorized Notion/Feishu docs into a local read-only Markdown tree the agent searches directly with Grep/Glob/Read (queries may be Chinese, e.g. 搜飞书/Notion 笔记); ships the sync-engine binary and onboarding guide.",
+  "version": "0.1.0",
+  "author": {
+    "name": "arcships"
+  }
+}

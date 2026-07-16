@@ -1,0 +1,19 @@
+{
+  "name": "arcships",
+  "owner": {
+    "name": "arcships"
+  },
+  "metadata": {
+    "description": "arcships' Claude Code plugins."
+  },
+  "plugins": [
+    {
+      "name": "opendoc",
+      "source": "./skill",
+      "description": "Local knowledge base: one-way mirror of authorized Notion/Feishu docs into a local read-only Markdown tree the agent searches directly with Grep/Glob/Read. The binary is not committed — on first use the skill offers a one-time, checksum-verified download of the build for this platform.",
+      "author": {
+        "name": "arcships"
+      }
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  com.arcships.opendoc.sync.plist — REFERENCE TEMPLATE. Prefer `opendoc schedule
+  --at 08:00,20:00`, which generates this exact plist with correct absolute paths
+  and your chosen times (see README.md). This copy is the fallback for building the
+  job by hand.
+
+  Runs `opendoc sync` twice daily (08:00 and 20:00) by invoking the opendoc binary
+  directly so the local mirror is never more than half a day stale.
+
+  DO NOT load this template as-is. Copy it, replace every __HOME__ with your
+  absolute home directory (launchd does NOT expand ~ or $HOME in these paths),
+  then follow README.md to install it. No wrapper script is needed: opendoc reads
+  the Notion token from <root>/.internal/env natively. Never store the token in
+  this plist — it is a template that may end up in version control.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.arcships.opendoc.sync</string>
+
+    <!-- Invoke the binary directly (no wrapper). launchd does NOT expand ~/$HOME,
+         so this stays an absolute, __HOME__-templated path. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>__HOME__/.claude/skills/opendoc/bin/opendoc</string>
+        <string>sync</string>
+    </array>
+
+    <!-- Run at 08:00 and 20:00 every day (two calendar entries). -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key><integer>8</integer>
+            <key>Minute</key><integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>20</integer>
+            <key>Minute</key><integer>0</integer>
+        </dict>
+    </array>
+
+    <!-- Optional: override the mirror root here if you do not use ~/.opendoc.
+         opendoc reads OPENDOC_ROOT to locate both the data dir and the
+         <root>/.internal/env token file. -->
+    <!--
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>OPENDOC_ROOT</key>
+        <string>__HOME__/.opendoc</string>
+    </dict>
+    -->
+
+    <!-- Log routing: stdout/stderr of each run land in the mirror's log dir. -->
+    <key>StandardOutPath</key>
+    <string>__HOME__/.opendoc/.internal/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.opendoc/.internal/logs/launchd.err.log</string>
+
+    <!-- Do not relaunch on exit; this is a scheduled job, not a daemon. -->
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

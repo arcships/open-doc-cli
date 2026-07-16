@@ -1,0 +1,4 @@
+.DS_Store
+
+# built skill binary (produced by scripts/build-skill.sh)
+skill/bin/opendoc
