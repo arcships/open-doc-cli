@@ -73,16 +73,31 @@ Every `.md` carries YAML frontmatter: `id` (platform-stable ID), `source`, `type
 
 ## Getting started
 
-**As a Claude Code plugin (recommended)** — install the `opendoc` plugin and just start using it (e.g. ask Claude to search your notes). The engine binary isn't committed; on first use the skill notices it's missing and, with your OK, downloads the platform build (`opendoc-<os>-<arch>`) from GitHub releases, verified by sha256.
+opendoc is distributed as an agent plugin — one package, dual-manifested for both agents — via the [arcships/plugins](https://github.com/arcships/plugins) marketplace catalog. Installing sparse-fetches only the plugin package (`skill/`), never this repo's source tree. Then just start using it (e.g. ask the agent to search your notes; it will walk you through first-time setup). The engine binary isn't committed; on first use the skill notices it's missing and, with your OK, downloads the platform build (`opendoc-<os>-<arch>`) from GitHub releases, verified by sha256.
 
-**Or build from source:**
+**Claude Code** — inside a `claude` session:
 
-```bash
-go build ./cmd/opendoc      # build the opendoc binary
-./scripts/build-skill.sh    # package skill/ as a Claude Code plugin
+```
+/plugin marketplace add arcships/plugins
+/plugin install opendoc@arcships
 ```
 
-Then initialize and sync:
+**Codex** — in your terminal:
+
+```bash
+codex plugin marketplace add arcships/plugins
+codex plugin add opendoc@arcships
+```
+
+**For development** — build the engine from source and install the plugin from your working tree (this repo carries a dev-only catalog named `arcships-dev` so it can't collide with the real marketplace):
+
+```bash
+./scripts/build-skill.sh                      # builds skill/bin/opendoc
+claude plugin marketplace add "$(pwd)"        # or: codex plugin marketplace add "$(pwd)"
+# then install opendoc@arcships-dev
+```
+
+Once installed, the agent drives everything — but the CLI also works standalone:
 
 ```bash
 opendoc init                # interactive setup, writes .internal/config.toml
@@ -116,7 +131,7 @@ Exit codes are deterministic, output is structured, and the commands never promp
 - [docs/dev/README.md](docs/dev/README.md) — contributor onboarding: build, test, and where to start.
 - [docs/dev/testing.md](docs/dev/testing.md) — how tests are organized, mock patterns, fixture red lines.
 - [docs/notion-properties-mapping.md](docs/notion-properties-mapping.md) — Notion properties → frontmatter mapping.
-- [skill/SKILL.md](skill/SKILL.md) — the Agent Skill guide that ships in the plugin.
+- [skill/skills/opendoc/SKILL.md](skill/skills/opendoc/SKILL.md) — the Agent Skill guide that ships in the plugin.
 
 ## License
 

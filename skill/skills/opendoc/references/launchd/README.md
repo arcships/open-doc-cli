@@ -97,7 +97,8 @@ the embedded engine; leave it unset in normal operation.)
 `com.arcships.opendoc.sync.plist` in this directory is the same plist `opendoc schedule`
 generates, kept as a reference. If you cannot run `opendoc schedule` (e.g. building the
 job by hand or on a machine without the built binary), copy it, replace every `__HOME__`
-with your absolute home directory, adjust the `StartCalendarInterval` times, write it to
+with your absolute home directory and `__OPENDOC_BIN__` with the absolute path of the
+installed plugin's `bin/opendoc`, adjust the `StartCalendarInterval` times, write it to
 `~/Library/LaunchAgents/`, then follow the same `launchctl load` + first-run steps above.
 Non-default mirror root: set `OPENDOC_ROOT` in the plist's `EnvironmentVariables` block
 (opendoc reads it to locate both the data dir and the `<root>/.internal/env` token file).

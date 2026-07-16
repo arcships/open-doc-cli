@@ -1,0 +1,26 @@
+{
+  "name": "opendoc",
+  "version": "0.1.0",
+  "description": "Local knowledge base: one-way mirrors authorized Notion/Feishu docs into a local read-only Markdown tree the agent searches directly with Grep/Glob/Read (queries may be Chinese, e.g. 搜飞书/Notion 笔记); ships the sync-engine binary and onboarding guide.",
+  "author": {
+    "name": "arcships"
+  },
+  "repository": "https://github.com/arcships/open-doc-cli",
+  "license": "Apache-2.0",
+  "keywords": ["knowledge-base", "notion", "feishu", "lark", "sync", "markdown"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "opendoc",
+    "shortDescription": "Mirror your Notion/Feishu docs into a local, greppable knowledge base",
+    "longDescription": "opendoc one-way mirrors the documents you've authorized in Notion and Feishu/Lark into a local read-only Markdown tree. The agent answers from it directly with filesystem search — no API, no credentials, no network at query time. The plugin ships the sync-engine binary (downloaded on first use, sha256-verified) plus onboarding and retrieval guides.",
+    "developerName": "arcships",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "websiteURL": "https://github.com/arcships/open-doc-cli",
+    "defaultPrompt": [
+      "Search my Notion notes about ...",
+      "上次关于 X 的结论是什么？搜一下我的飞书文档",
+      "Sync my opendoc mirror"
+    ]
+  }
+}

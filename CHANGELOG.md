@@ -22,3 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     and stable doctor failure codes.
   - Claude Code plugin (`skill/`) that wraps the engine and teaches agents
     how to retrieve from the mirror.
+
+### Changed
+
+- The plugin package (`skill/`) now supports Codex alongside Claude Code:
+  dual manifests (`.claude-plugin/plugin.json` + `.codex-plugin/plugin.json`)
+  and the skill moved to the standard nested layout (`skills/opendoc/SKILL.md`).
+  Distribution is now plugin-marketplace-only via the separate catalog repo
+  `arcships/plugins` (git-subdir entries that sparse-fetch just `skill/`, so
+  installs never pull this repo's source); the catalogs kept at this repo's
+  root are the dev-only `arcships-dev` marketplace installing from the working
+  tree. The `~/.claude/skills` symlink install path is gone, and
+  `scripts/build-skill.sh` only builds the binary. CI/release now enforce that
+  both manifest versions stay in sync and match the release tag.

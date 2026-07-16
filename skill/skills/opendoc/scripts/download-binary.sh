@@ -10,10 +10,12 @@
 # checksums.txt, and installs it at <plugin-root>/bin/opendoc. Developers don't
 # need this — they build from source with scripts/build-skill.sh instead.
 #
-# Resolution is self-contained (locates itself via BASH_SOURCE), so it works the
-# same whether the plugin was installed from a marketplace or symlinked into
-# ~/.claude/skills/. The release tag is read from plugin.json's version, so that
-# manifest is the single source of truth — no version is hard-coded here.
+# Resolution is self-contained (locates itself via BASH_SOURCE and walks up to the
+# plugin root — the nearest ancestor holding a .claude-plugin/ or .codex-plugin/
+# manifest), so it works the same under a Claude Code or Codex marketplace install
+# and in a repo checkout. The release tag is read from the plugin manifest's
+# version, so that manifest is the single source of truth — no version is
+# hard-coded here.
 #
 # Overrides (env):
 #   OPENDOC_REPO   owner/repo to download from  (default: arcships/open-doc-cli)
@@ -27,15 +29,26 @@ REPO="${OPENDOC_REPO:-arcships/open-doc-cli}"
 
 die() { echo "download-binary.sh: $*" >&2; exit 1; }
 
-# --- locate the plugin root (this script lives at <root>/scripts/) -----------
+# --- locate the plugin root (this script lives at <root>/skills/opendoc/scripts/) ---
+# Walk up from the script to the nearest directory holding a plugin manifest, so
+# the script keeps working if the skill nesting depth ever changes.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ROOT=""
+probe="${SCRIPT_DIR}"
+for _ in 1 2 3 4 5; do
+  probe="$(cd "${probe}/.." && pwd)"
+  if [ -f "${probe}/.claude-plugin/plugin.json" ] || [ -f "${probe}/.codex-plugin/plugin.json" ]; then
+    ROOT="${probe}"
+    break
+  fi
+done
+[ -n "${ROOT}" ] || die "could not locate the plugin root: no .claude-plugin/ or .codex-plugin/ manifest in any ancestor of ${SCRIPT_DIR}"
 BIN_DIR="${ROOT}/bin"
 BIN_PATH="${BIN_DIR}/opendoc"
 MANIFEST="${ROOT}/.claude-plugin/plugin.json"
+[ -f "${MANIFEST}" ] || MANIFEST="${ROOT}/.codex-plugin/plugin.json"
 
-# --- read the version from plugin.json → release tag -------------------------
-[ -f "${MANIFEST}" ] || die "plugin manifest not found at ${MANIFEST}"
+# --- read the version from the plugin manifest → release tag -----------------
 if command -v jq >/dev/null 2>&1; then
   VERSION="$(jq -r '.version' "${MANIFEST}")"
 else

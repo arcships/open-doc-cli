@@ -20,10 +20,13 @@
     <string>com.arcships.opendoc.sync</string>
 
     <!-- Invoke the binary directly (no wrapper). launchd does NOT expand ~/$HOME,
-         so this stays an absolute, __HOME__-templated path. -->
+         so this must be the absolute path of the installed plugin's bin/opendoc —
+         replace __OPENDOC_BIN__ with the real path (find it via
+         `command -v opendoc` in an agent session, or under your agent's plugin
+         install dir, e.g. ~/.codex/plugins/cache/<marketplace>/opendoc/<version>/bin/opendoc). -->
     <key>ProgramArguments</key>
     <array>
-        <string>__HOME__/.claude/skills/opendoc/bin/opendoc</string>
+        <string>__OPENDOC_BIN__</string>
         <string>sync</string>
     </array>
 

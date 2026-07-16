@@ -1,16 +1,16 @@
 {
-  "name": "arcships",
+  "name": "arcships-dev",
   "owner": {
     "name": "arcships"
   },
   "metadata": {
-    "description": "arcships' Claude Code plugins."
+    "description": "DEVELOPMENT catalog for this checkout — installs the plugin from the local working tree. End users should use the arcships/plugins marketplace instead."
   },
   "plugins": [
     {
       "name": "opendoc",
       "source": "./skill",
-      "description": "Local knowledge base: one-way mirror of authorized Notion/Feishu docs into a local read-only Markdown tree the agent searches directly with Grep/Glob/Read. The binary is not committed — on first use the skill offers a one-time, checksum-verified download of the build for this platform.",
+      "description": "opendoc built from this working tree (local development).",
       "author": {
         "name": "arcships"
       }

@@ -2,8 +2,15 @@ name: release
 
 # Tag-triggered. Pushing a tag like v0.1.0 cross-compiles the engine for
 # every supported platform, generates sha256 checksums, and publishes them
-# as a GitHub Release. The download script (skill/scripts/download-binary.sh)
-# consumes these assets. Keep the tag in sync with skill/.claude-plugin/plugin.json.
+# as a GitHub Release. The download script
+# (skill/skills/opendoc/scripts/download-binary.sh) consumes these assets and
+# derives the tag from the plugin manifest's version, so the tag MUST equal the
+# version in BOTH manifests (skill/.claude-plugin/plugin.json and
+# skill/.codex-plugin/plugin.json) — enforced by the check step below.
+#
+# After the release is live, finish publishing by bumping the catalog repo
+# (arcships/plugins): point the opendoc entry's `ref` at this tag in both
+# .claude-plugin/marketplace.json and .agents/plugins/marketplace.json.
 on:
   push:
     tags: ['v*']
@@ -17,6 +24,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # The skill's download-binary.sh maps manifest version -> release tag, so a
+      # tag whose version isn't in the manifests would publish unreachable assets.
+      - name: check manifest versions match the tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for m in skill/.claude-plugin/plugin.json skill/.codex-plugin/plugin.json; do
+            v="$(jq -r .version "$m")"
+            if [ "$v" != "$tag" ]; then
+              echo "::error::$m version ($v) does not match tag ($GITHUB_REF_NAME)"
+              exit 1
+            fi
+          done
 
       - uses: actions/setup-go@v5
         with:

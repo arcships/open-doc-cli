@@ -6,8 +6,13 @@ opendoc is a one-way sync engine that mirrors documents you've authorized in
 Notion and Feishu into a local, read-only Markdown tree. It never writes
 back to the source platform. The mirror is meant to be consumed directly by
 coding agents with Grep/Glob/Read — no API calls, no credentials, no network
-access needed at read time. A companion Claude Code plugin (`skill/`) wraps
-the `opendoc` binary and exposes it to agents as a skill.
+access needed at read time. A companion plugin (`skill/`) wraps the `opendoc`
+binary and exposes it to agents as a skill. The one package is dual-manifested —
+`.claude-plugin/plugin.json` for Claude Code, `.codex-plugin/plugin.json` for
+Codex — and is distributed only through plugin marketplaces: end users install
+from the separate catalog repo `arcships/plugins` (git-subdir entries that
+sparse-fetch just `skill/`); the catalogs at THIS repo's root are the dev-only
+`arcships-dev` marketplace, installing from the local working tree.
 
 ## Repo layout
 
@@ -32,7 +37,7 @@ the `opendoc` binary and exposes it to agents as a skill.
 ```
 go build ./...
 go test ./...
-./scripts/build-skill.sh   # builds the binary into skill/bin/opendoc and symlinks it into ~/.claude/skills/opendoc
+./scripts/build-skill.sh   # builds the engine binary into the plugin package (skill/bin/opendoc)
 ```
 
 ## Key invariants
@@ -52,7 +57,7 @@ go test ./...
   `3` = `ExitNotInitialized`) are part of the tool's contract. Don't rename
   or renumber them — scripts and docs key off the literal strings.
 
-## `skill/SKILL.md`
+## `skill/skills/opendoc/SKILL.md`
 
 This file is runtime instructions read by coding agents, not just
 documentation. Its semantics (what it tells an agent to do, and when) must

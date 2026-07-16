@@ -12,7 +12,7 @@ go build ./...
 go test ./...        # all green means the environment is ready, ~20 seconds
 ```
 
-Runtime credentials are only needed if you want to actually run a sync (not required): Feishu authorization (`opendoc init` walks you through it — the embedded engine handles QR-code app creation + login, zero install) and a Notion integration token. See [skill/references/setup.md](../../skill/references/setup.md) for the configuration flow — that's a script written for an agent to guide a user through, but a human can follow it too.
+Runtime credentials are only needed if you want to actually run a sync (not required): Feishu authorization (`opendoc init` walks you through it — the embedded engine handles QR-code app creation + login, zero install) and a Notion integration token. See [skill/skills/opendoc/references/setup.md](../../skill/skills/opendoc/references/setup.md) for the configuration flow — that's a script written for an agent to guide a user through, but a human can follow it too.
 
 ## Running Locally (Without Polluting Your Real Mirror)
 
@@ -29,7 +29,7 @@ go run ./cmd/opendoc --root /tmp/opendoc-dev sync
 1. Root [README](../../README.md) — why the project exists, the product shape, design principles.
 2. [architecture.md](architecture.md) — the layering, the Adapter contract, the full flow of one sync, what each package is responsible for. **Required reading before changing code — this is the spec of record.**
 3. [testing.md](testing.md) — how tests are organized, mock patterns, fixture red lines. **Required reading before writing tests.**
-4. Reference material (consult as needed): [notion-properties-mapping.md](../notion-properties-mapping.md) — how Notion database properties land in frontmatter; [skill/references/degradation-tags.md](../../skill/references/degradation-tags.md) — the exact degradation markers the engine emits.
+4. Reference material (consult as needed): [notion-properties-mapping.md](../notion-properties-mapping.md) — how Notion database properties land in frontmatter; [skill/skills/opendoc/references/degradation-tags.md](../../skill/skills/opendoc/references/degradation-tags.md) — the exact degradation markers the engine emits.
 
 ## Repository Map
 
@@ -56,7 +56,7 @@ docs/              Reference material + this directory (evergreen docs only)
 
 - **Commit messages are in English** (docs and discussion may be in Chinese), conventional-commit style: `feat: ...` / `fix: ...` / `docs(skill): ...`.
 - **Tests must be hermetic**: no network calls, no reading real credentials, no dependency on `~/.opendoc`. Fixtures must never use real production data (see the red-lines section of [testing.md](testing.md) for details).
-- **Degradation red line**: any conversion loss must leave a trace (placeholder tag + count + report); changes that silently drop content will not be accepted (see the degradation contract in [architecture.md](architecture.md)). New degradation tags must be kept in sync with [degradation-tags.md](../../skill/references/degradation-tags.md).
+- **Degradation red line**: any conversion loss must leave a trace (placeholder tag + count + report); changes that silently drop content will not be accepted (see the degradation contract in [architecture.md](architecture.md)). New degradation tags must be kept in sync with [degradation-tags.md](../../skill/skills/opendoc/references/degradation-tags.md).
 - **Keep the docs true**: [architecture.md](architecture.md) is the spec of record. When a change alters behavior it describes, update the document in the same change — a stale spec is worse than none.
-- **Agent contract stability**: the CLI's exit codes, the `doctor --json` schema, and probe failure codes (`F2-NOAUTH`, etc.) are consumed by [SKILL.md](../../skill/SKILL.md) and setup.md — they're part of the external API. Changes must be accompanied by updates to the skill docs.
+- **Agent contract stability**: the CLI's exit codes, the `doctor --json` schema, and probe failure codes (`F2-NOAUTH`, etc.) are consumed by [SKILL.md](../../skill/skills/opendoc/SKILL.md) and setup.md — they're part of the external API. Changes must be accompanied by updates to the skill docs.
 - Before submitting: `go build ./... && go test ./...`; if you touched anything related to the skill package, run `./scripts/build-skill.sh --build-only` once.

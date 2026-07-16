@@ -1,25 +1,35 @@
 #!/usr/bin/env bash
 #
-# build-skill.sh — build the opendoc sync-engine binary into the plugin package and
-# install/refresh a symlink so `~/.claude/skills/opendoc` (or a --target dir) points
-# at the repo's skill/ directory.
+# build-skill.sh — build the opendoc sync-engine binary into the plugin package.
 #
-# The repo's skill/ dir IS a Claude Code plugin root (the delivery unit):
-# .claude-plugin/plugin.json (manifest) + SKILL.md at the root (single-skill
-# layout) + references/ + a static Go binary at bin/opendoc. With the plugin enabled,
-# bin/ is added to the Bash tool's PATH, so the agent can invoke `opendoc` bare.
-# Installing = symlinking into ~/.claude/skills/ (a skills-directory plugin,
-# auto-loaded as opendoc@skills-dir on the next session). This script only builds and
-# symlinks; it never touches mirror data (~/.opendoc), credentials, or launchctl.
+# The repo's skill/ dir IS the plugin root (the delivery unit), dual-manifested
+# for both supported agents:
+#   .claude-plugin/plugin.json   Claude Code manifest
+#   .codex-plugin/plugin.json    Codex manifest ("skills": "./skills/")
+#   skills/opendoc/              the skill: SKILL.md + references/ + scripts/
+#   bin/opendoc                  the engine binary (this script's output; never
+#                                committed — end users get it via the skill's
+#                                scripts/download-binary.sh instead)
+#
+# Under Claude Code an enabled plugin's bin/ is on the Bash tool's PATH; Codex
+# has no such mechanism, so SKILL.md instructs agents to call the binary by
+# path there. End-user distribution is the arcships/plugins marketplace repo
+# (git-subdir entries pointing at this repo's skill/); the catalogs in THIS
+# repo's root (.claude-plugin/marketplace.json, .agents/plugins/marketplace.json)
+# are the dev-only "arcships-dev" marketplace that installs from the working
+# tree. This script only builds — it never touches mirror data (~/.opendoc),
+# credentials, or launchctl.
+#
+# Local development install (point the marketplace at your checkout):
+#   Claude Code:  /plugin marketplace add /path/to/open-doc-cli
+#                 /plugin install opendoc@arcships-dev
+#   Codex:        codex plugin marketplace add /path/to/open-doc-cli
+#                 codex plugin add opendoc@arcships-dev
 #
 # Usage:
-#   scripts/build-skill.sh                 # build + symlink ~/.claude/skills/opendoc -> repo skill/
-#   scripts/build-skill.sh --target LINK   # create/refresh symlink LINK -> repo skill/ instead
-#                                          # (LINK is the link path itself, e.g. /tmp/x/opendoc)
-#   scripts/build-skill.sh --build-only    # build the binary, skip the symlink
+#   scripts/build-skill.sh        # build skill/bin/opendoc
 #
-# Idempotent: re-running rebuilds the binary and leaves an already-correct
-# symlink in place. It refuses to clobber an existing NON-symlink target.
+# Idempotent: re-running just rebuilds the binary.
 
 set -euo pipefail
 
@@ -30,33 +40,18 @@ SKILL_DIR="${REPO_ROOT}/skill"
 BIN_DIR="${SKILL_DIR}/bin"
 BIN_PATH="${BIN_DIR}/opendoc"
 
-TARGET="${HOME}/.claude/skills/opendoc"
-DO_LINK=1
-
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --target)
-      shift
-      [ $# -gt 0 ] || { echo "build-skill.sh: --target needs a directory argument" >&2; exit 2; }
-      TARGET="$1"
-      ;;
-    --target=*)
-      TARGET="${1#--target=}"
-      ;;
-    --build-only)
-      DO_LINK=0
-      ;;
-    -h|--help)
-      sed -n '2,23p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
-      exit 0
-      ;;
-    *)
-      echo "build-skill.sh: unknown argument: $1" >&2
-      exit 2
-      ;;
-  esac
-  shift
-done
+case "${1:-}" in
+  -h|--help)
+    sed -n '2,32p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  "")
+    ;;
+  *)
+    echo "build-skill.sh: unknown argument: $1" >&2
+    exit 2
+    ;;
+esac
 
 # --- build ---------------------------------------------------------------
 mkdir -p "${BIN_DIR}"
@@ -67,31 +62,8 @@ echo "building ${BIN_PATH} (static, CGO disabled) ..."
 # ~15M larger.
 ( cd "${REPO_ROOT}" && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o "${BIN_PATH}" ./cmd/opendoc )
 echo "built $(cd "${REPO_ROOT}" && du -h "${BIN_PATH}" | cut -f1) binary: ${BIN_PATH}"
-
-if [ "${DO_LINK}" -eq 0 ]; then
-  echo "skipping symlink (--build-only)"
-  exit 0
-fi
-
-# --- install symlink -----------------------------------------------------
-# Refuse to clobber a real file/dir; only ever replace a symlink of our own.
-if [ -e "${TARGET}" ] && [ ! -L "${TARGET}" ]; then
-  echo "build-skill.sh: refusing to overwrite ${TARGET} — it exists and is not a symlink." >&2
-  echo "  Move or remove it first, then re-run." >&2
-  exit 1
-fi
-
-mkdir -p "$(dirname "${TARGET}")"
-
-if [ -L "${TARGET}" ]; then
-  CURRENT="$(readlink "${TARGET}")"
-  if [ "${CURRENT}" = "${SKILL_DIR}" ]; then
-    echo "symlink already current: ${TARGET} -> ${SKILL_DIR}"
-    exit 0
-  fi
-  echo "refreshing symlink: ${TARGET} (was -> ${CURRENT})"
-  rm -f "${TARGET}"
-fi
-
-ln -s "${SKILL_DIR}" "${TARGET}"
-echo "linked ${TARGET} -> ${SKILL_DIR}"
+echo
+echo "plugin package ready at: ${SKILL_DIR}"
+echo "local install: /plugin marketplace add ${REPO_ROOT}   (Claude Code)"
+echo "               codex plugin marketplace add ${REPO_ROOT}   (Codex)"
+echo "               then install plugin 'opendoc' from marketplace 'arcships-dev'"

@@ -20,6 +20,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The plugin ships dual manifests (Claude Code + Codex); their versions
+      # must never drift apart — release tagging keys off this version.
+      - name: plugin manifest versions in sync
+        run: |
+          a="$(jq -r .version skill/.claude-plugin/plugin.json)"
+          b="$(jq -r .version skill/.codex-plugin/plugin.json)"
+          if [ "$a" != "$b" ]; then
+            echo "::error::manifest version drift: .claude-plugin=$a .codex-plugin=$b"
+            exit 1
+          fi
+
       - uses: actions/setup-go@v5
         with:
           # Single source of truth for the Go version: go.mod's `go` directive.

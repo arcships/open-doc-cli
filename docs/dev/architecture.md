@@ -74,7 +74,7 @@ The leaf-to-directory conversion that happens the first time a leaf gains a chil
 - **content_hash is always computed on the "fetched original"** (before degradation, before rewriting), so degraded output and link rewriting never make a document look "dirty." Link rewriting also deliberately doesn't write back the hash.
 - **All disk writes go through `atomicWrite`** (temp + fsync + rename); readers never see a half-written file.
 - **Frontmatter is hand-rendered** (no YAML library), guaranteeing deterministic key order and byte-for-byte stability across runs ([frontmatter.go](../../internal/frontmatter/frontmatter.go)).
-- **The degradation contract: loss is never silent.** Conversion is inevitably lossy (whiteboards, embedded tables, oversized pages, unsupported blocks), but every degraded resource block must land at least two of three things: **readable degraded content, a drillable ID, and a jumpable online link** — and every degradation increments a counter in the sync report. An unknown block is preserved as its verbatim tag rather than dropped. The exact marker shapes the engine emits, per platform, are catalogued in [skill/references/degradation-tags.md](../../skill/references/degradation-tags.md) (that file ships in the plugin and must stay in sync with the emitters in `internal/feishu/degrade.go` / `internal/notion/degrade.go`).
+- **The degradation contract: loss is never silent.** Conversion is inevitably lossy (whiteboards, embedded tables, oversized pages, unsupported blocks), but every degraded resource block must land at least two of three things: **readable degraded content, a drillable ID, and a jumpable online link** — and every degradation increments a counter in the sync report. An unknown block is preserved as its verbatim tag rather than dropped. The exact marker shapes the engine emits, per platform, are catalogued in [skill/skills/opendoc/references/degradation-tags.md](../../skill/skills/opendoc/references/degradation-tags.md) (that file ships in the plugin and must stay in sync with the emitters in `internal/feishu/degrade.go` / `internal/notion/degrade.go`).
 
 ## manifest.sqlite (`internal/manifest/`)
 
@@ -131,7 +131,7 @@ Two zero-dependency primitives: `Bucket` (a steady-rate token bucket, burst 1, c
 - **Why go through the lark engine instead of the official markdown endpoint**: the official endpoint silently drops images, whiteboards, and tables — a direct violation of the degradation contract; `docs +fetch` makes two calls per document — markdown gets the body (as a bonus, whiteboards come with mermaid inlined for free), XML gets stable asset tokens and inter-document link references.
 - **Enumeration**: wiki recurses per space via `+node-list` (`obj_token` is the primary ID, `node_token` goes into `AltID`); drive recurses via `GET /drive/v1/files`; then `metas/batch_query` (200/batch) backfills URL and edit time uniformly. Unknown obj types → placeholder `TypeFile`, leaving no holes in the tree.
 - **Envelope discipline**: engine output is always an `{ok, data, error}` envelope; `envelope.go` explicitly asserts the shape (the source of F4 drift alerts), and error code ranges map to F2-NOAUTH / F3-SCOPE.
-- **bitable degradation has three branches**: small tables are inlined as a GFM table; beyond `bitable_inline_max_rows` (default 200) → schema + row count + link; fetch failure → a comment-preserving tag + link. The list of degradation tags must stay in sync with [degradation-tags.md](../../skill/references/degradation-tags.md).
+- **bitable degradation has three branches**: small tables are inlined as a GFM table; beyond `bitable_inline_max_rows` (default 200) → schema + row count + link; fetch failure → a comment-preserving tag + link. The list of degradation tags must stay in sync with [degradation-tags.md](../../skill/skills/opendoc/references/degradation-tags.md).
 
 ## CLI Layer (`internal/cli/`)
 
@@ -146,7 +146,7 @@ Manual dispatch with stdlib `flag` (no command framework, to control dependencie
 
 `resolve` uses a narrower set: 0 found / 1 not found / 2 usage.
 
-The **doctor probes** are the foundation of onboarding: the structured failure codes (`G0–G2` / `F1–F5` / `N1–N3`) are the agent's routing keys (see [setup.md](../../skill/references/setup.md)); only `fail` affects the exit code, an unconfigured platform produces a `skip` line rather than a failure — `--json` consumers always see a stable schema. The probes are entirely dependency-injected (fake Runner, fake Notion probe, fixed clock) and unit-testable without network.
+The **doctor probes** are the foundation of onboarding: the structured failure codes (`G0–G2` / `F1–F5` / `N1–N3`) are the agent's routing keys (see [setup.md](../../skill/skills/opendoc/references/setup.md)); only `fail` affects the exit code, an unconfigured platform produces a `skip` line rather than a failure — `--json` consumers always see a stable schema. The probes are entirely dependency-injected (fake Runner, fake Notion probe, fixed clock) and unit-testable without network.
 
 ## Configuration and Environment (`internal/config/`)
 
@@ -157,7 +157,7 @@ The **doctor probes** are the foundation of onboarding: the structured failure c
 ## Build and Distribution
 
 ```bash
-./scripts/build-skill.sh    # CGO_ENABLED=0 static build → skill/bin/opendoc, and symlinks ~/.claude/skills/opendoc → this repo's skill/
+./scripts/build-skill.sh    # CGO_ENABLED=0 static build → skill/bin/opendoc
 ```
 
-`skill/` is the plugin root: `.claude-plugin/plugin.json` + `SKILL.md` + `bin/opendoc` + `references/`. Once the plugin is enabled, `bin/` is on the agent's PATH. Unattended launchd invokes the binary via an absolute path (see the plist under [skill/references/launchd/](../../skill/references/launchd/)).
+`skill/` is the plugin root, dual-manifested for both supported agents: `.claude-plugin/plugin.json` (Claude Code) + `.codex-plugin/plugin.json` (Codex) + `bin/opendoc` + the skill itself under `skills/opendoc/` (`SKILL.md` + `references/` + `scripts/`). Distribution is marketplace-only, via the separate catalog repo `arcships/plugins`, whose entries use `git-subdir` sources pointing at this repo's `skill/` — installs sparse-fetch only that directory, never the Go source. The catalogs at this repo's root (`.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`) are the dev-only `arcships-dev` marketplace that installs from the local working tree. Under Claude Code an enabled plugin's `bin/` is on the agent's PATH; Codex has no PATH mechanism, so SKILL.md instructs the agent to invoke `<plugin-root>/bin/opendoc` by path. Unattended launchd invokes the binary via an absolute path (see the plist under [skill/skills/opendoc/references/launchd/](../../skill/skills/opendoc/references/launchd/)).
