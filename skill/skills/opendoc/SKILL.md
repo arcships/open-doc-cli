@@ -24,20 +24,25 @@ Three different things share the "opendoc" name — do not confuse them:
   Readable, editable, rebuilds in seconds.
 - **Installed plugin** — the delivery unit (the repo's `skill/`), installed via each
   agent's plugin marketplace. The plugin root holds the manifests
-  (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`) and the `bin/opendoc`
-  engine binary; this file and its `references/` + `scripts/` live in the plugin's
-  `skills/opendoc/` — so **the plugin root is two directories above this SKILL.md**.
+  (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`); this file and its
+  `references/` + `scripts/` live in the plugin's `skills/opendoc/` — so **the plugin
+  root is two directories above this SKILL.md**. The plugin package never contains
+  the engine binary.
+- **Engine binary** — `~/.opendoc/bin/opendoc`, installed once by the bundled
+  download script (bootstrap below). It lives deliberately OUTSIDE the plugin
+  directory: plugin dirs are not a stable home — the Claude desktop app
+  re-provisions the plugin per session, claude.ai cloud mounts it read-only, and
+  Codex / the Claude Code CLI cache put every version in a fresh version-stamped
+  directory. `~/.opendoc/bin` survives sessions and plugin updates and is shared by
+  every agent host on the machine.
 - **Mirror data directory** — default `~/.opendoc` (changeable via `--root` /
   `OPENDOC_ROOT`): the Markdown tree + `assets/` + `.internal/` (config, manifest —
-  ignore when retrieving).
+  ignore when retrieving). Changing the root does **not** move the engine binary.
 
-**Invoking the binary**: under Claude Code the enabled plugin's `bin/` is on the Bash
-tool's PATH — run `opendoc doctor`, `opendoc sync` bare, no path needed. Under Codex
-(no PATH mechanism), call it by path: `<plugin-root>/bin/opendoc`, where the plugin
-root is two directories above this SKILL.md (a Codex marketplace install lands at
-`~/.codex/plugins/cache/<marketplace>/opendoc/<version>/`). Resolve that absolute
-path once per session and reuse it. This document writes bare `opendoc` throughout —
-substitute the resolved path when bare invocation isn't available.
+**Invoking the binary**: resolve once per session and reuse. Try `command -v opendoc`
+first (a dev checkout's plugin puts its `bin/` on the Claude Code CLI's PATH); when
+that misses, use `~/.opendoc/bin/opendoc`. This document writes bare `opendoc`
+throughout — substitute the resolved path when bare invocation isn't available.
 To change engine behavior: clone/checkout the repo `github.com/arcships/open-doc-cli` →
 edit → `./scripts/build-skill.sh`.
 
@@ -47,24 +52,26 @@ edit → `./scripts/build-skill.sh`.
 branch on `initialized` and the failure codes. doctor is mostly local probing and cheap;
 reuse the result within the session — do not re-run it before every command.
 
-**Bootstrap — the engine binary is missing** (`command not found`, or
-`<plugin-root>/bin/opendoc` does not exist): missing, not broken. It's
-platform-specific and never committed, so a fresh plugin install ships without it,
-and a plugin update starts from a clean package again (Codex even installs each
-version into a new cache directory). Tell the user a one-time engine download is
-needed (~40MB, from this repo's GitHub Releases, sha256-verified) and, once they
-agree, run the bundled installer, then re-run doctor:
+**Bootstrap — the engine binary is missing** (`command -v opendoc` misses AND
+`~/.opendoc/bin/opendoc` does not exist): missing, not broken. The binary is
+platform-specific and never ships inside the plugin package. Tell the user a
+one-time engine download is needed (~40MB, from this repo's GitHub Releases,
+sha256-verified, installed to `~/.opendoc/bin/opendoc`) and, once they agree, run
+the bundled installer, then re-run doctor:
 
 ```bash
 "${CLAUDE_SKILL_DIR}/scripts/download-binary.sh"
 ```
 
-`${CLAUDE_SKILL_DIR}` is set by Claude Code only. When it is empty (Codex), run
-`scripts/download-binary.sh` from the directory holding this SKILL.md — the script
-self-locates and walks up to the plugin root, so only its path matters.
-`OPENDOC_REPO=owner/repo` overrides the download source (default
-`arcships/open-doc-cli`). On a checksum mismatch the script refuses to install —
-report that verbatim rather than working around it.
+`${CLAUDE_SKILL_DIR}` is set by the Claude Code CLI; other hosts (Claude desktop
+app, Codex) may leave it unset — then run `scripts/download-binary.sh` from the
+directory holding this SKILL.md. The script self-locates (it walks up to the plugin
+root only to read the release version from the manifest), installs into
+`~/.opendoc/bin` (override: `OPENDOC_BIN_DIR`), is checksum-idempotent (re-running
+when up to date downloads nothing), and reuses a checksum-matching local copy
+instead of downloading. `OPENDOC_REPO=owner/repo` overrides the download source
+(default `arcships/open-doc-cli`). On a checksum mismatch the script refuses to
+install — report that verbatim rather than working around it.
 
 | doctor output | your action |
 |---|---|
@@ -167,10 +174,11 @@ mirror root.
   writes the LaunchAgent plist but **never runs `launchctl`**: it prints the
   `launchctl load`/`start` lines for the user to run (first run needs a human present
   for macOS approvals). Point the user at it when they ask to set up or change automatic
-  syncing; details in `references/launchd/README.md`. **Codex caveat**: the plist
-  embeds the binary's absolute path, and Codex installs each plugin version into a
-  new version-stamped cache directory — after a plugin update, re-run
-  `opendoc schedule` so the plist points at the current binary.
+  syncing; details in `references/launchd/README.md`. **Path caveat**: the plist
+  embeds the invoked binary's absolute path — always run `schedule` via the stable
+  engine path (`~/.opendoc/bin/opendoc schedule ...`), never via a plugin-directory
+  copy: plugin paths are version-stamped or per-session, so they go stale on the
+  next update and silently kill the job.
 
 When reading a sync report, focus on `warnings` (e.g. the permission-jitter guard: when
 one platform's listing shrinks more than 20% versus the manifest, the delete step
