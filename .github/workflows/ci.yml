@@ -24,8 +24,8 @@ jobs:
       # must never drift apart — release tagging keys off this version.
       - name: plugin manifest versions in sync
         run: |
-          a="$(jq -r .version skill/.claude-plugin/plugin.json)"
-          b="$(jq -r .version skill/.codex-plugin/plugin.json)"
+          a="$(jq -r .version plugin/.claude-plugin/plugin.json)"
+          b="$(jq -r .version plugin/.codex-plugin/plugin.json)"
           if [ "$a" != "$b" ]; then
             echo "::error::manifest version drift: .claude-plugin=$a .codex-plugin=$b"
             exit 1
@@ -39,7 +39,7 @@ jobs:
 
       - name: gofmt
         run: |
-          unformatted="$(gofmt -l . | grep -v '^skill/bin/' || true)"
+          unformatted="$(gofmt -l . | grep -v '^plugin/bin/' || true)"
           if [ -n "$unformatted" ]; then
             echo "These files are not gofmt-ed:"
             echo "$unformatted"
@@ -63,5 +63,7 @@ jobs:
 
       # The delivery unit is a static, CGO-free single binary.
       # Guard that the packaging build still works, not just `go build ./...`.
-      - name: delivery build (static skill binary)
-        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o skill/bin/opendoc ./cmd/opendoc
+      # Output matches scripts/build-skill.sh (plugin/bin/opendoc is the
+      # committed shim — never build over it).
+      - name: delivery build (static engine binary)
+        run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o plugin/bin/opendoc-dev ./cmd/opendoc
