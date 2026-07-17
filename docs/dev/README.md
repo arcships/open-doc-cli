@@ -12,7 +12,7 @@ go build ./...
 go test ./...        # all green means the environment is ready, ~20 seconds
 ```
 
-Runtime credentials are only needed if you want to actually run a sync (not required): Feishu authorization (`opendoc init` walks you through it — the embedded engine handles QR-code app creation + login, zero install) and a Notion integration token. See [skill/skills/opendoc/references/setup.md](../../skill/skills/opendoc/references/setup.md) for the configuration flow — that's a script written for an agent to guide a user through, but a human can follow it too.
+Runtime credentials are only needed if you want to actually run a sync (not required): Feishu authorization (`opendoc init` walks you through it — the embedded engine handles QR-code app creation + login, zero install) and a Notion integration token. See [plugin/skills/opendoc/references/setup.md](../../plugin/skills/opendoc/references/setup.md) for the configuration flow — that's a script written for an agent to guide a user through, but a human can follow it too.
 
 ## Running Locally (Without Polluting Your Real Mirror)
 
@@ -29,7 +29,7 @@ go run ./cmd/opendoc --root /tmp/opendoc-dev sync
 1. Root [README](../../README.md) — why the project exists, the product shape, design principles.
 2. [architecture.md](architecture.md) — the layering, the Adapter contract, the full flow of one sync, what each package is responsible for. **Required reading before changing code — this is the spec of record.**
 3. [testing.md](testing.md) — how tests are organized, mock patterns, fixture red lines. **Required reading before writing tests.**
-4. Reference material (consult as needed): [notion-properties-mapping.md](../notion-properties-mapping.md) — how Notion database properties land in frontmatter; [skill/skills/opendoc/references/degradation-tags.md](../../skill/skills/opendoc/references/degradation-tags.md) — the exact degradation markers the engine emits.
+4. Reference material (consult as needed): [notion-properties-mapping.md](../notion-properties-mapping.md) — how Notion database properties land in frontmatter; [plugin/skills/opendoc/references/degradation-tags.md](../../plugin/skills/opendoc/references/degradation-tags.md) — the exact degradation markers the engine emits.
 
 ## Repository Map
 
@@ -47,7 +47,7 @@ internal/
 ├── frontmatter/   Hand-rolled frontmatter rendering (deterministic key order)
 ├── config/        config.toml + .internal/env fallback
 └── ratelimit/     Token bucket + backoff
-skill/             Claude Code plugin package (SKILL.md + bin/opendoc + references/)
+plugin/            plugin package for Claude Code + Codex (SKILL.md + bin/ shim + references/)
 scripts/           build-skill.sh (build + install the plugin, see the comment header in the file)
 docs/              Reference material + this directory (evergreen docs only)
 ```

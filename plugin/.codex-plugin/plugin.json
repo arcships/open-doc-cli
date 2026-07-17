@@ -18,9 +18,9 @@
     "capabilities": ["Read"],
     "websiteURL": "https://github.com/arcships/open-doc-cli",
     "defaultPrompt": [
+      "Sync my Notion notes",
       "Search my Notion notes about ...",
-      "上次关于 X 的结论是什么？搜一下我的飞书文档",
-      "Sync my opendoc mirror"
+      "上次关于 X 的结论是什么？搜一下我的飞书文档"
     ]
   }
 }

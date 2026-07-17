@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "opendoc",
-      "source": "./skill",
+      "source": "./plugin",
       "description": "opendoc built from this working tree (local development).",
       "author": {
         "name": "arcships"

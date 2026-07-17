@@ -22,7 +22,7 @@ Three different things share the "opendoc" name — do not confuse them:
 
 - **Source repo** — a checkout of `github.com/arcships/open-doc-cli`: the Go source.
   Readable, editable, rebuilds in seconds.
-- **Installed plugin** — the delivery unit (the repo's `skill/`), installed via each
+- **Installed plugin** — the delivery unit (the repo's `plugin/`), installed via each
   agent's plugin marketplace. The plugin root holds the manifests
   (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`); this file and its
   `references/` + `scripts/` live in the plugin's `skills/opendoc/` — so **the plugin
@@ -34,15 +34,26 @@ Three different things share the "opendoc" name — do not confuse them:
   re-provisions the plugin per session, claude.ai cloud mounts it read-only, and
   Codex / the Claude Code CLI cache put every version in a fresh version-stamped
   directory. `~/.opendoc/bin` survives sessions and plugin updates and is shared by
-  every agent host on the machine.
+  every agent host on the machine. What the plugin's `bin/` DOES ship is a thin
+  shim (`bin/opendoc`) that execs the engine — see "Invoking the binary" below.
 - **Mirror data directory** — default `~/.opendoc` (changeable via `--root` /
   `OPENDOC_ROOT`): the Markdown tree + `assets/` + `.internal/` (config, manifest —
   ignore when retrieving). Changing the root does **not** move the engine binary.
 
-**Invoking the binary**: resolve once per session and reuse. Try `command -v opendoc`
-first (a dev checkout's plugin puts its `bin/` on the Claude Code CLI's PATH); when
-that misses, use `~/.opendoc/bin/opendoc`. This document writes bare `opendoc`
-throughout — substitute the resolved path when bare invocation isn't available.
+**Invoking the binary**: resolve once per session with this no-fail one-liner and
+reuse the result (never probe with a bare `command -v opendoc` — its miss exits
+non-zero and renders as a failed command):
+
+```bash
+OPENDOC=$(command -v opendoc || echo "$HOME/.opendoc/bin/opendoc")
+```
+
+Under Claude Code the enabled plugin's `bin/` is on PATH, so this finds the bundled
+shim, which execs the engine (a dev build `bin/opendoc-dev` when present, else
+`~/.opendoc/bin/opendoc`; `OPENDOC_ENGINE=<path>` overrides both). Codex puts no
+plugin directory on PATH, so there the fallback IS the normal path, not an edge
+case. This document writes bare `opendoc` throughout — substitute `"$OPENDOC"`
+(shell state does not persist between Bash calls: re-derive it inline per command).
 To change engine behavior: clone/checkout the repo `github.com/arcships/open-doc-cli` →
 edit → `./scripts/build-skill.sh`.
 
@@ -52,9 +63,10 @@ edit → `./scripts/build-skill.sh`.
 branch on `initialized` and the failure codes. doctor is mostly local probing and cheap;
 reuse the result within the session — do not re-run it before every command.
 
-**Bootstrap — the engine binary is missing** (`command -v opendoc` misses AND
-`~/.opendoc/bin/opendoc` does not exist): missing, not broken. The binary is
-platform-specific and never ships inside the plugin package. Tell the user a
+**Bootstrap — the engine binary is missing** (`~/.opendoc/bin/opendoc` does not
+exist; invoking through the shim then fails fast with exit 127 and a message
+pointing here): missing, not broken. The engine is platform-specific and never
+ships inside the plugin package (the shim is not the engine). Tell the user a
 one-time engine download is needed (~40MB, from this repo's GitHub Releases,
 sha256-verified, installed to `~/.opendoc/bin/opendoc`) and, once they agree, run
 the bundled installer, then re-run doctor:
@@ -72,6 +84,19 @@ when up to date downloads nothing), and reuses a checksum-matching local copy
 instead of downloading. `OPENDOC_REPO=owner/repo` overrides the download source
 (default `arcships/open-doc-cli`). On a checksum mismatch the script refuses to
 install — report that verbatim rather than working around it.
+
+**Update — plugin moved, engine didn't**: a plugin update replaces this SKILL.md
+but leaves `~/.opendoc/bin/opendoc` untouched, so the engine can go stale. The
+installer records what it installed in `~/.opendoc/bin/.version`; whenever the
+engine in use is `~/.opendoc/bin/opendoc` — a PATH hit on the plugin shim counts,
+since the shim execs that same path; only a dev build (`bin/opendoc-dev` beside
+the shim, or `OPENDOC_ENGINE`) shadows this check, on purpose — compare that file
+against the `version` in
+`<plugin-root>/.claude-plugin/plugin.json` (plugin root: two directories above
+this SKILL.md). Same → proceed, no network touched. Different or missing → tell
+the user the plugin was updated and the engine needs to follow, then (with their
+OK, as above) re-run the same installer — it converges the binary to the manifest
+version and rewrites the stamp.
 
 | doctor output | your action |
 |---|---|

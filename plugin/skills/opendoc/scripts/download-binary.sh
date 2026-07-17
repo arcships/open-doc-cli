@@ -22,8 +22,9 @@
 # the nearest ancestor holding a .claude-plugin/ or .codex-plugin/ manifest), but
 # only to read the release tag from the plugin manifest's version — that manifest
 # is the single source of truth; no version is hard-coded here. If the plugin
-# root happens to hold a bin/opendoc whose checksum already matches (a dev build,
-# or an install from before the target moved), it is copied instead of downloaded.
+# root happens to hold a checksum-matching binary already (bin/opendoc-dev from a
+# dev build, or bin/opendoc from before it became the shim), it is copied instead
+# of downloaded.
 #
 # Overrides (env):
 #   OPENDOC_REPO      owner/repo to download from  (default: arcships/open-doc-cli)
@@ -56,6 +57,11 @@ done
 [ -n "${ROOT}" ] || die "could not locate the plugin root: no .claude-plugin/ or .codex-plugin/ manifest in any ancestor of ${SCRIPT_DIR}"
 BIN_DIR="${OPENDOC_BIN_DIR:-${HOME}/.opendoc/bin}"
 BIN_PATH="${BIN_DIR}/opendoc"
+# The binary itself carries no version stamp, so record what was installed here;
+# SKILL.md compares this file against the plugin manifest's version to detect
+# "plugin updated but engine not" and re-runs this script on mismatch.
+STAMP_PATH="${BIN_DIR}/.version"
+write_stamp() { printf '%s\n' "${VERSION}" > "${STAMP_PATH}"; }
 MANIFEST="${ROOT}/.claude-plugin/plugin.json"
 [ -f "${MANIFEST}" ] || MANIFEST="${ROOT}/.codex-plugin/plugin.json"
 
@@ -111,22 +117,26 @@ EXPECTED="$(grep " ${ASSET}\$" "${TMP}/checksums.txt" | awk '{print $1}' | head 
 
 # --- idempotent: skip if the installed binary already matches ----------------
 if [ -f "${BIN_PATH}" ] && [ "$(sha256_of "${BIN_PATH}")" = "${EXPECTED}" ]; then
+  write_stamp
   echo "already up to date: ${BIN_PATH} (${ASSET} ${TAG})" >&2
   exit 0
 fi
 
 # --- reuse a matching local copy instead of downloading -----------------------
-# A dev build (scripts/build-skill.sh) or a pre-move install may have left the
-# binary at <plugin-root>/bin/opendoc; if its checksum matches the release, copy.
-LOCAL_CANDIDATE="${ROOT}/bin/opendoc"
-if [ -f "${LOCAL_CANDIDATE}" ] && [ "$(sha256_of "${LOCAL_CANDIDATE}")" = "${EXPECTED}" ]; then
+# A dev build (scripts/build-skill.sh → bin/opendoc-dev) or an install from
+# before bin/opendoc became the shim may hold the release binary already; if a
+# checksum matches, copy instead of downloading.
+for LOCAL_CANDIDATE in "${ROOT}/bin/opendoc-dev" "${ROOT}/bin/opendoc"; do
+  [ -f "${LOCAL_CANDIDATE}" ] || continue
+  [ "$(sha256_of "${LOCAL_CANDIDATE}")" = "${EXPECTED}" ] || continue
   mkdir -p "${BIN_DIR}"
   cp -f "${LOCAL_CANDIDATE}" "${TMP}/opendoc"
   chmod +x "${TMP}/opendoc"
   mv -f "${TMP}/opendoc" "${BIN_PATH}"
+  write_stamp
   echo "installed ${BIN_PATH} from local copy ${LOCAL_CANDIDATE} (${ASSET} ${TAG})" >&2
   exit 0
-fi
+done
 
 # --- download, verify, then install atomically -------------------------------
 echo "downloading ${ASSET} ..." >&2
@@ -137,4 +147,5 @@ ACTUAL="$(sha256_of "${TMP}/opendoc")"
 chmod +x "${TMP}/opendoc"
 mkdir -p "${BIN_DIR}"
 mv -f "${TMP}/opendoc" "${BIN_PATH}"
+write_stamp
 echo "installed ${BIN_PATH} ($(sha256_of "${BIN_PATH}" | cut -c1-12)… ${ASSET} ${TAG})" >&2

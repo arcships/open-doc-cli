@@ -2,19 +2,23 @@
 #
 # build-skill.sh — build the opendoc sync-engine binary into the plugin package.
 #
-# The repo's skill/ dir IS the plugin root (the delivery unit), dual-manifested
+# The repo's plugin/ dir IS the plugin root (the delivery unit), dual-manifested
 # for both supported agents:
 #   .claude-plugin/plugin.json   Claude Code manifest
 #   .codex-plugin/plugin.json    Codex manifest ("skills": "./skills/")
 #   skills/opendoc/              the skill: SKILL.md + references/ + scripts/
-#   bin/opendoc                  the engine binary (this script's output; never
-#                                committed — end users get it via the skill's
-#                                scripts/download-binary.sh instead)
+#   bin/opendoc                  committed shim: routes to bin/opendoc-dev when
+#                                present, else ~/.opendoc/bin/opendoc (the real
+#                                engine, installed by scripts/download-binary.sh)
+#   bin/opendoc-dev              the dev engine build (this script's output;
+#                                gitignored, never shipped)
 #
-# Under Claude Code an enabled plugin's bin/ is on the Bash tool's PATH; Codex
-# has no such mechanism, so SKILL.md instructs agents to call the binary by
-# path there. End-user distribution is the arcships/plugins marketplace repo
-# (git-subdir entries pointing at this repo's skill/); the catalogs in THIS
+# Under Claude Code an enabled plugin's bin/ is on the Bash tool's PATH, so the
+# shim makes bare `opendoc` work there — running your fresh dev build in a dev
+# checkout, the stable engine everywhere else. Codex has no PATH mechanism, so
+# SKILL.md instructs agents to resolve the engine path themselves.
+# End-user distribution is the arcships/plugins marketplace repo
+# (git-subdir entries pointing at this repo's plugin/); the catalogs in THIS
 # repo's root (.claude-plugin/marketplace.json, .agents/plugins/marketplace.json)
 # are the dev-only "arcships-dev" marketplace that installs from the working
 # tree. This script only builds — it never touches mirror data (~/.opendoc),
@@ -27,7 +31,7 @@
 #                 codex plugin add opendoc@arcships-dev
 #
 # Usage:
-#   scripts/build-skill.sh        # build skill/bin/opendoc
+#   scripts/build-skill.sh        # build plugin/bin/opendoc-dev
 #
 # Idempotent: re-running just rebuilds the binary.
 
@@ -36,13 +40,13 @@ set -euo pipefail
 # Resolve the repo root from this script's own location (scripts/ lives at repo root).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SKILL_DIR="${REPO_ROOT}/skill"
-BIN_DIR="${SKILL_DIR}/bin"
-BIN_PATH="${BIN_DIR}/opendoc"
+PLUGIN_DIR="${REPO_ROOT}/plugin"
+BIN_DIR="${PLUGIN_DIR}/bin"
+BIN_PATH="${BIN_DIR}/opendoc-dev"
 
 case "${1:-}" in
   -h|--help)
-    sed -n '2,32p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 0
     ;;
   "")
@@ -63,7 +67,7 @@ echo "building ${BIN_PATH} (static, CGO disabled) ..."
 ( cd "${REPO_ROOT}" && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o "${BIN_PATH}" ./cmd/opendoc )
 echo "built $(cd "${REPO_ROOT}" && du -h "${BIN_PATH}" | cut -f1) binary: ${BIN_PATH}"
 echo
-echo "plugin package ready at: ${SKILL_DIR}"
+echo "plugin package ready at: ${PLUGIN_DIR}"
 echo "local install: /plugin marketplace add ${REPO_ROOT}   (Claude Code)"
 echo "               codex plugin marketplace add ${REPO_ROOT}   (Codex)"
 echo "               then install plugin 'opendoc' from marketplace 'arcships-dev'"

@@ -8,7 +8,7 @@
       "name": "opendoc",
       "source": {
         "source": "local",
-        "path": "./skill"
+        "path": "./plugin"
       },
       "policy": {
         "installation": "AVAILABLE",

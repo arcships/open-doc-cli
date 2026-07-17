@@ -1,4 +1,5 @@
 .DS_Store
 
-# built skill binary (produced by scripts/build-skill.sh)
-skill/bin/opendoc
+# dev engine build (produced by scripts/build-skill.sh; the committed
+# plugin/bin/opendoc is a thin shim that prefers this when present)
+plugin/bin/opendoc-dev

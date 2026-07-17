@@ -18,7 +18,8 @@ import (
 
 // feishuAuthScopes is the read-only scope set the mirror needs, verified live on
 // the reference app (kept in sync with the scope table in
-// skill/references/setup.md). offline_access is required for the refresh token
+// plugin/skills/opendoc/references/setup.md). offline_access is required for the
+// refresh token
 // that keeps unattended syncs alive; everything else is read-only.
 const feishuAuthScopes = "offline_access " +
 	"docx:document:readonly docs:document.content:read docs:document.media:download " +

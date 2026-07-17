@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# opendoc shim — ships with the plugin so hosts that put an enabled plugin's
+# bin/ on PATH (Claude Code) can invoke `opendoc` bare. The engine binary
+# itself lives at ~/.opendoc/bin/opendoc — stable across plugin updates and
+# shared by every agent host on the machine; installed by the skill's
+# scripts/download-binary.sh — this shim only routes to it. Codex puts no
+# plugin directory on PATH, so there SKILL.md resolves the engine path
+# directly; keep its lookup order in sync with the candidates below.
+#
+# Dev override: a build-skill.sh output at <this dir>/opendoc-dev (dev
+# checkouts only, gitignored) shadows the stable engine, so a dev checkout's
+# plugin on PATH runs the fresh build. OPENDOC_ENGINE=<path> overrides both.
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+for candidate in "${OPENDOC_ENGINE:-}" "${HERE}/opendoc-dev" "${HOME}/.opendoc/bin/opendoc"; do
+  if [ -n "${candidate}" ] && [ -x "${candidate}" ]; then
+    exec "${candidate}" "$@"
+  fi
+done
+
+echo "opendoc: engine binary not installed (looked for ~/.opendoc/bin/opendoc)." >&2
+echo "One-time install (sha256-verified download): run the opendoc skill's scripts/download-binary.sh" >&2
+exit 127
