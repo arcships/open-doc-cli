@@ -10,6 +10,9 @@ English | [简体中文](README.zh-CN.md)
 
 **One-way mirror your authorized Notion and Feishu/Lark docs into a local, read-only Markdown tree that agents read directly — no API, no credentials, no network at query time.**
 
+> [!NOTE]
+> **This repository is not a plugin marketplace** — you can't install opendoc by pointing your agent at `arcships/open-doc-cli`. To install, follow the [Getting started](#getting-started) guide below, which installs from the [arcships/plugins](https://github.com/arcships/plugins) marketplace.
+
 ## Why opendoc
 
 Your knowledge lives online — Notion for personal notes, Feishu/Lark for work docs. Your agent lives on your machine. Every time it needs something you wrote, it has to cross that gap through an API: manage credentials, page through results, respect rate limits, and lean on platform search endpoints whose recall was never designed for how an agent actually retrieves.

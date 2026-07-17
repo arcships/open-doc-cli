@@ -10,6 +10,9 @@
 
 **把授权范围内的 Notion 和飞书/Lark 文档单向镜像到本地，落成一棵只读的 Markdown 树，agent 直接读——查询时无 API、无凭证、无网络。**
 
+> [!NOTE]
+> **本仓库不是 plugin marketplace**——不能通过把 agent 指向 `arcships/open-doc-cli` 来安装 opendoc。安装请按下方[快速开始](#快速开始)的引导，它会从 [arcships/plugins](https://github.com/arcships/plugins) marketplace 目录仓安装。
+
 ## 为什么做 opendoc
 
 你的知识在线上——个人笔记在 Notion，工作文档在飞书。而你的 agent 在本地机器上。它每次需要你写过的东西，都得跨过这道鸿沟走 API：管理凭证、翻页、扛限流，还要依赖平台搜索端点——而那些端点的召回方式从来不是为 agent 的检索习惯设计的。
